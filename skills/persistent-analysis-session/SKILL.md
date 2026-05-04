@@ -11,14 +11,47 @@ When a large object is expensive to load, do not run analysis scripts as fresh o
 
 This is for exploratory work. Keep production pipelines, reproducible batch jobs, and CI scripts as normal process-per-run commands unless the user asks otherwise.
 
+This skill only sets up the persistent execution backend. It does not provide domain-specific analysis, plotting, or figure-generation scripts. Those scripts are created later in the target project's `analysis/` directory and are submitted to the running session through `/run`.
+
 ## Workflow
 
 1. Identify the language, large object path, loader, and desired in-session object name.
 2. Check for existing project policy files (`AGENTS.md`, `Makefile`, `tools/`, `analysis/`) before adding new tooling.
 3. Add a local server from `scripts/r_session_server.R` or `scripts/python_session_server.py`, adapting only the loader defaults and dependency imports.
 4. Add `Makefile` targets like `session-server` and `session-run`, bound to `127.0.0.1`.
-5. Put analysis code under `analysis/`. The analysis script must assume the large object already exists in memory and must not reload it.
-6. Verify with a skip-load or tiny fixture mode before loading the real large object.
+5. Put generated analysis and plotting scripts under `analysis/`. They must assume the large object already exists in memory and must not reload it.
+6. Create or update an analysis record document such as `analysis/README.md` or `analysis/analysis-log.md`.
+7. Verify with a skip-load or tiny fixture mode before loading the real large object.
+
+## Analysis Record
+
+Keep a short project-local record of how the persistent session is used. The record should list:
+
+- Session setup: language, object path, object name, loader, host, port, and start command.
+- Analysis scripts: each file under `analysis/`, what question it answers, and how it is run through `session-run`.
+- Outputs: generated tables, figures, logs, and result directories.
+- Findings and decisions: brief notes that explain which exploratory outputs matter and what to try next.
+
+Use `references/analysis-record.md` as a template when the project does not already have an analysis log.
+
+## Boundaries
+
+- The server scripts are infrastructure for reusing memory, not analysis notebooks.
+- Do not add generic plotting scripts to this reusable skill.
+- Generate project-specific analysis or figure scripts only after the user asks for a concrete analysis.
+- Store those scripts and their outputs in the target project, not in this skill bundle.
+
+## Expected Project Layout
+
+```text
+tools/
+  r_session_server.R or python_session_server.py
+analysis/
+  README.md or analysis-log.md
+  exploratory_step_01.*
+results/
+  ...
+```
 
 ## Safety
 
