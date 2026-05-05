@@ -1,4 +1,4 @@
 interface:
   display_name: "Persistent Analysis Session"
-  short_description: "Reuse R or Python memory for exploratory analysis."
-  default_prompt: "Set up a persistent R or Python analysis session so large objects are loaded once and analysis scripts run through the session."
+  short_description: "Reuse R or Python memory for exploratory analysis across OSes."
+  default_prompt: "Set up an OS-appropriate persistent R or Python analysis session so large objects are loaded once and analysis scripts run through the session."

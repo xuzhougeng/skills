@@ -11,6 +11,10 @@ Copy `scripts/python_session_server.py` into `tools/python_session_server.py`, t
 - `PY_SESSION_SKIP_LOAD`: set to `1` for endpoint tests without loading the object
 - `PY_SESSION_LOADER`: optional explicit loader: `auto`, `pickle`, `joblib`, `h5ad`, `csv`, `parquet`
 
+## Windows Background Use
+
+Use the same server script on Windows. Start it with PowerShell `Start-Process`, set `$env:PY_SESSION_*` variables first, and submit `/run` requests with `Invoke-RestMethod`. See `windows.md` for concrete commands.
+
 ## Loader Rules
 
 - `.pkl`, `.pickle` -> `pickle.load()`

@@ -1,13 +1,13 @@
 ---
 name: persistent-analysis-session
-description: Use when exploratory R or Python analysis repeatedly reloads large in-memory objects, such as Seurat, AnnData, model, pickle, RDS, qs, h5ad, joblib, parquet, or other expensive datasets.
+description: Use when exploratory R or Python analysis repeatedly reloads large in-memory objects such as Seurat, AnnData, pickle, RDS, qs, h5ad, joblib, or parquet, or needs a long-running localhost backend on macOS, Linux, or Windows.
 ---
 
 # Persistent Analysis Session
 
 ## Core Rule
 
-When a large object is expensive to load, do not run analysis scripts as fresh one-shot processes. Create or reuse a localhost persistent session that loads the object once, then send small analysis scripts to that session.
+When a large object is expensive to load, do not run analysis scripts as fresh one-shot processes. Create or reuse a localhost persistent session that loads the object once, then send small analysis scripts to that session through an OS-appropriate launcher.
 
 This is for exploratory work. Keep production pipelines, reproducible batch jobs, and CI scripts as normal process-per-run commands unless the user asks otherwise.
 
@@ -18,7 +18,7 @@ This skill only sets up the persistent execution backend. It does not provide do
 1. Identify the language, large object path, loader, and desired in-session object name.
 2. Check for existing project policy files (`AGENTS.md`, `Makefile`, `tools/`, `analysis/`) before adding new tooling.
 3. Add a local server from `scripts/r_session_server.R` or `scripts/python_session_server.py`, adapting only the loader defaults and dependency imports.
-4. Add `Makefile` targets like `session-server` and `session-run`, bound to `127.0.0.1`.
+4. Add OS-native launch/run helpers bound to `127.0.0.1`: `Makefile` or shell helpers on macOS/Linux, PowerShell helpers on Windows.
 5. Put generated analysis and plotting scripts under `analysis/`. They must assume the large object already exists in memory and must not reload it.
 6. Create or update an analysis record document such as `analysis/README.md` or `analysis/analysis-log.md`.
 7. Verify with a skip-load or tiny fixture mode before loading the real large object.
@@ -27,7 +27,7 @@ This skill only sets up the persistent execution backend. It does not provide do
 
 Keep a short project-local record of how the persistent session is used. The record should list:
 
-- Session setup: language, object path, object name, loader, host, port, and start command.
+- Session setup: language, object path, object name, loader, host, port, start command, log path, and PID file if backgrounded.
 - Analysis scripts: each file under `analysis/`, what question it answers, and how it is run through `session-run`.
 - Outputs: generated tables, figures, logs, and result directories.
 - Findings and decisions: brief notes that explain which exploratory outputs matter and what to try next.
@@ -46,9 +46,12 @@ Use `references/analysis-record.md` as a template when the project does not alre
 ```text
 tools/
   r_session_server.R or python_session_server.py
+  start_session.ps1 if Windows needs reusable launch helpers
 analysis/
   README.md or analysis-log.md
   exploratory_step_01.*
+logs/
+  persistent-session.*.log
 results/
   ...
 ```
@@ -60,13 +63,23 @@ results/
 - Do not kill a user-owned long-running session unless asked.
 - If the object is huge, verify syntax and endpoint behavior with a mock or skip-load mode first.
 
+## Platform Launchers
+
+Choose the launcher that matches the target workspace.
+
+- macOS/Linux: use the project style, usually `Makefile`, shell, `tmux`, or `nohup`, and call endpoints with `curl`.
+- Windows PowerShell: prefer `Start-Process -PassThru` for a durable background server, redirect stdout/stderr to `logs/`, and call endpoints with `Invoke-RestMethod`. Avoid Unix inline environment syntax like `VAR=value command`.
+- WSL/Git Bash: treat as macOS/Linux only when the interpreter, server process, and analysis paths all live inside that environment. Do not mix Windows paths and WSL paths in one launcher.
+
+Read `references/windows.md` when implementing Windows launch/run helpers.
+
 ## R Pattern
 
 Use the R template when files are loaded with `qs::qread()`, `readRDS()`, Seurat, Monocle, CellChat, WGCNA, or similar R workflows.
 
 Read `references/r.md` only when implementing or adapting the R server.
 
-Expected project commands:
+Expected macOS/Linux project commands:
 
 ```makefile
 session-server:
@@ -76,13 +89,15 @@ session-run:
 	curl -sS --data-binary @"$(FILE)" http://127.0.0.1:8787/run
 ```
 
+For Windows, use the same `tools/r_session_server.R` but start it with PowerShell `Start-Process`; see `references/windows.md`.
+
 ## Python Pattern
 
 Use the Python template when files are loaded with `scanpy.read_h5ad()`, `anndata.read_h5ad()`, `pickle`, `joblib`, pandas, xarray, torch, or similar Python workflows.
 
 Read `references/python.md` only when implementing or adapting the Python server.
 
-Expected project commands:
+Expected macOS/Linux project commands:
 
 ```makefile
 session-server:
@@ -92,9 +107,12 @@ session-run:
 	curl -sS --data-binary @"$(FILE)" http://127.0.0.1:8787/run
 ```
 
+For Windows, use the same `tools/python_session_server.py` but start it with PowerShell `Start-Process`; see `references/windows.md`.
+
 ## Common Mistakes
 
 - Reintroducing `readRDS()`, `qread()`, `read_h5ad()`, `pickle.load()`, or `joblib.load()` inside every analysis script.
 - Starting the server with the default large object just to test plumbing. Use skip-load or a tiny fixture first.
 - Writing project-specific data paths into the reusable skill. Keep paths configurable.
 - Forgetting that Codex resume preserves conversation state, not R or Python process memory.
+- Reusing macOS/Linux launch syntax on Windows. PowerShell needs `$env:NAME = "value"` before `Start-Process`, and `curl` may be an alias rather than curl.

@@ -10,6 +10,10 @@ Copy `scripts/r_session_server.R` into `tools/r_session_server.R`, then adapt on
 - `R_SESSION_PORT`: default `8787`
 - `R_SESSION_SKIP_LOAD`: set to `1` for endpoint tests without loading the object
 
+## Windows Background Use
+
+Use the same server script on Windows. Start it with PowerShell `Start-Process`, set `$env:R_SESSION_*` variables first, and submit `/run` requests with `Invoke-RestMethod`. See `windows.md` for concrete commands.
+
 ## Loader Rules
 
 - `.qs` -> `qs::qread(path)`
