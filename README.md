@@ -26,3 +26,7 @@ Restart Codex after installation so the new skill is loaded.
 skills/persistent-analysis-session
 
 > 这个对象很大，不要反复加载，用常驻 session 做探索分析
+
+skills/sealos-remote-deploy
+
+> 从本地仓库和 kubeconfig 部署或更新 Sealos 托管的 Kubernetes 应用
